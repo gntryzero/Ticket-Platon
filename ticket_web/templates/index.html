@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Афиша — TicketPro{% endblock %}
+{% block content %}
+<section class="hero">
+    <h1>Афиша мероприятий</h1>
+    <p>Кино, театр, концерты, спорт и фестивали — бронируйте лучшие места в пару кликов</p>
+</section>
+
+<div class="cards-grid">
+{% for ev in events %}
+    <a class="event-card" href="{{ url_for('event', eid=ev.id) }}">
+        <div class="card-icon">{{ ev.icon }}</div>
+        <div class="card-body">
+            <h3>{{ ev.title }}</h3>
+            <p class="card-venue">{{ ev.venue_name }}, {{ ev.city }}</p>
+            <p class="card-date">{{ ev.event_date.strftime('%d.%m.%Y %H:%M') }}</p>
+            <div class="card-footer">
+                <span class="chip">{{ ev.category or 'событие' }}</span>
+                <span class="price">от {{ '%.0f'|format(ev.min_price or 0) }} ₽</span>
+            </div>
+        </div>
+    </a>
+{% else %}
+    <p class="empty">Афиша пока пуста. Загляните позже!</p>
+{% endfor %}
+</div>
+{% endblock %}

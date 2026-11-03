@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Админ-панель — TicketPro{% endblock %}
+{% block content %}
+<section class="hero hero-compact"><h1>Панель администратора</h1></section>
+
+<div class="admin-grid">
+    <div class="admin-card">
+        <h3>🏛 Добавить площадку</h3>
+        <form method="post">
+            <input type="hidden" name="action" value="add_venue">
+            <label>Название</label><input name="name" required>
+            <label>Адрес</label><input name="address">
+            <label>Город</label><input name="city" value="Ярославль">
+            <label>Вместимость</label><input name="capacity" type="number" value="100">
+            <button class="btn btn-primary btn-block" type="submit">Добавить</button>
+        </form>
+    </div>
+
+    <div class="admin-card">
+        <h3>🎭 Добавить мероприятие</h3>
+        <form method="post">
+            <input type="hidden" name="action" value="add_event">
+            <label>Название</label><input name="title" required>
+            <label>Описание</label><textarea name="description" rows="2"></textarea>
+            <label>Дата и время</label><input name="event_date" type="datetime-local" required>
+            <label>Площадка</label>
+            <select name="venue_id">
+                {% for v in venues %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}
+            </select>
+            <label>Категория</label>
+            <select name="category">
+                {% for c in cats %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-primary btn-block" type="submit">Добавить</button>
+        </form>
+    </div>
+
+    <div class="admin-card">
+        <h3>🎫 Добавить тип билета</h3>
+        <form method="post">
+            <input type="hidden" name="action" value="add_type">
+            <label>Мероприятие</label>
+            <select name="event_id">
+                {% for e in events %}<option value="{{ e.id }}">{{ e.title }}</option>{% endfor %}
+            </select>
+            <label>Название (Партер, VIP…)</label><input name="tname" required>
+            <label>Цена, ₽</label><input name="price" type="number" step="0.01" required>
+            <label>Рядов</label><input name="rows" type="number" value="5">
+            <label>Мест в ряду</label><input name="cols" type="number" value="10">
+            <button class="btn btn-primary btn-block" type="submit">Добавить</button>
+        </form>
+    </div>
+</div>
+
+<h3 class="admin-section-title">Все мероприятия ({{ events|length }})</h3>
+<table class="tickets-table">
+    <tr><th>ID</th><th>Название</th><th>Площадка</th><th>Дата</th></tr>
+    {% for e in events %}
+    <tr><td>{{ e.id }}</td><td>{{ e.title }}</td><td>{{ e.venue_name }}</td>
+        <td>{{ e.event_date.strftime('%d.%m.%Y %H:%M') }}</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

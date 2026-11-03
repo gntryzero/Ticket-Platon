@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Мои заказы — TicketPro{% endblock %}
+{% block content %}
+<section class="hero hero-compact"><h1>Мои заказы</h1></section>
+
+{% for o in orders %}
+<div class="order-card">
+    <div class="order-head">
+        <div>
+            <b>Заказ №{{ o.id }}</b>
+            <span class="muted"> · {{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        <div class="order-head-right">
+            {% if o.status == 'pending' %}<span class="badge badge-pending">⏳ не оплачен</span>
+            {% elif o.status == 'paid' %}<span class="badge badge-paid">✅ оплачен</span>
+            {% else %}<span class="badge badge-cancelled">❌ отменён</span>{% endif %}
+            <b class="order-total">{{ '%.0f'|format(o.total_price) }} ₽</b>
+        </div>
+    </div>
+
+    <table class="tickets-table">
+        <tr><th>Мероприятие</th><th>Тип</th><th>Ряд</th><th>Место</th><th>Цена</th><th>QR-код</th></tr>
+        {% for p in o['positions'] %}
+        <tr>
+            <td>{{ p.event_title }}</td>
+            <td>{{ p.type_name }}</td>
+            <td>{{ p.seat_row }}</td>
+            <td>{{ p.seat_number }}</td>
+            <td>{{ '%.0f'|format(p.price) }} ₽</td>
+            <td><code class="qr">{{ p.qr_code[:12] if p.qr_code else '—' }}</code></td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    {% if o.status == 'pending' %}
+    <div class="order-actions">
+        <form method="post" action="{{ url_for('pay', oid=o.id) }}">
+            <button type="submit" class="btn btn-success">Оплатить</button>
+        </form>
+        <form method="post" action="{{ url_for('cancel', oid=o.id) }}">
+            <button type="submit" class="btn btn-danger">Отменить</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<p class="empty">У вас пока нет заказов. Выберите мероприятие в <a href="{{ url_for('index') }}">афише</a>.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — TicketPro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+<div class="auth-card">
+    <div class="auth-logo">🎟</div>
+    <h1 class="auth-title">Ticket<span class="logo-accent">Pro</span></h1>
+    <p class="auth-sub">Билеты на лучшие мероприятия города</p>
+
+    {% if error %}<div class="flash flash-error">{{ error }}</div>{% endif %}
+
+    <div class="tabs">
+        <a class="tab {{ 'active' if mode == 'login' }}" href="{{ url_for('auth', mode='login') }}">Вход</a>
+        <a class="tab {{ 'active' if mode == 'register' }}" href="{{ url_for('auth', mode='register') }}">Регистрация</a>
+    </div>
+
+    {% if mode == 'register' %}
+    <form method="post" action="{{ url_for('auth') }}">
+        <input type="hidden" name="mode" value="register">
+        <label>Имя</label>
+        <input type="text" name="full_name" placeholder="Иван Иванов">
+        <label>E-mail</label>
+        <input type="email" name="email" placeholder="you@mail.ru" required>
+        <label>Пароль (не менее 6 символов)</label>
+        <input type="password" name="password" required>
+        <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
+    </form>
+    {% else %}
+    <form method="post" action="{{ url_for('auth') }}">
+        <input type="hidden" name="mode" value="login">
+        <label>E-mail</label>
+        <input type="email" name="email" placeholder="you@mail.ru" required>
+        <label>Пароль</label>
+        <input type="password" name="password" required>
+        <button type="submit" class="btn btn-primary btn-block">Войти</button>
+    </form>
+    {% endif %}
+</div>
+</body>
+</html>

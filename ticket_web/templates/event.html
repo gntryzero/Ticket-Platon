@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} — TicketPro{% endblock %}
+{% block content %}
+<section class="event-head">
+    <div class="event-head-icon">{{ event.icon }}</div>
+    <div>
+        <h1>{{ event.title }}</h1>
+        <p class="muted">{{ event.venue_name }}, {{ event.city }} ·
+            {{ event.event_date.strftime('%d.%m.%Y %H:%M') }}</p>
+        <p>{{ event.description }}</p>
+    </div>
+</section>
+
+<form method="post" action="{{ url_for('book', eid=event.id) }}">
+<div class="booking-layout">
+    <aside class="types-panel">
+        <h3>Тип билета</h3>
+        {% for t in types %}
+            <div class="type-item" onclick="pickType({{ t.id }})">
+                <div class="type-name">{{ t.name }}</div>
+                <div class="type-info">{{ '%.0f'|format(t.price) }} ₽ · свободно {{ seats[t.id]|selectattr('status','equalto','free')|list|length }}</div>
+            </div>
+        {% endfor %}
+        <div class="cart-box">
+            <h4>Ваши места</h4>
+            <div id="cart-list" class="cart-list">Пока ничего не выбрано</div>
+            <div class="cart-total">Итого: <b id="cart-total">0 ₽</b></div>
+            {% if user %}
+                <button type="submit" class="btn btn-primary btn-block" id="btn-book" disabled>Забронировать</button>
+            {% else %}
+                <a class="btn btn-primary btn-block" href="{{ url_for('auth', next=url_for('event', eid=event.id)) }}">Войдите, чтобы купить</a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <section class="hall-panel">
+        <div class="screen-wrap"><div class="screen">Э К Р А Н</div></div>
+        {% for t in types %}
+            <div class="hall-group" data-type="{{ t.id }}" style="display:none">
+                {% set rows = seats[t.id]|groupby('seat_row') %}
+                {% for row_name, row_seats in rows %}
+                    <div class="hall-row">
+                        <span class="row-label">{{ row_name }}</span>
+                        {% for s in row_seats %}
+                            {% if s.status == 'free' %}
+                                <label class="seat seat-free">
+                                    <input type="checkbox" name="seats" value="{{ s.id }}"
+                                           data-type="{{ t.id }}" data-price="{{ t.price }}"
+                                           onchange="toggleSeat(this)">
+                                    <span>{{ s.seat_number }}</span>
+                                </label>
+                            {% else %}
+                                <span class="seat seat-taken" title="Занято">{{ s.seat_number }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        <div class="legend">
+            <span><i class="dot dot-free"></i> свободно</span>
+            <span><i class="dot dot-picked"></i> выбрано</span>
+            <span><i class="dot dot-taken"></i> занято</span>
+        </div>
+    </section>
+</div>
+</form>
+
+<script>
+var MAX_SEATS = 6;
+var currentType = null;
+var typesShown = false;
+
+function pickType(id) {
+    currentType = id;
+    document.querySelectorAll('.type-item').forEach(function(el){ el.classList.remove('active'); });
+    document.querySelectorAll('.type-item').forEach(function(el){
+        var on = el.getAttribute('onclick') === "pickType(" + id + ")";
+        if (on) el.classList.add('active');
+    });
+    document.querySelectorAll('.hall-group').forEach(function(g){
+        g.style.display = (g.getAttribute('data-type') == id) ? 'block' : 'none';
+    });
+    clearPicked();
+}
+
+function clearPicked() {
+    document.querySelectorAll('.hall-group input[type=checkbox]').forEach(function(cb){
+        if (cb.checked) cb.checked = false;
+    });
+    renderCart();
+}
+
+function toggleSeat(cb) {
+    var picked = document.querySelectorAll('.hall-group input[type=checkbox]:checked');
+    if (cb.checked && picked.length > MAX_SEATS) {
+        cb.checked = false;
+        alert('Максимум ' + MAX_SEATS + ' билетов за заказ');
+    }
+    renderCart();
+}
+
+function renderCart() {
+    var picked = document.querySelectorAll('.hall-group input[type=checkbox]:checked');
+    var list = document.getElementById('cart-list');
+    var total = 0;
+    var html = [];
+    picked.forEach(function(cb) {
+        var seat = cb.parentElement.querySelector('span');
+        var row = cb.closest('.hall-row').querySelector('.row-label').textContent;
+        var price = parseFloat(cb.getAttribute('data-price'));
+        total += price;
+        html.push('<div class="cart-item"><span>Ряд ' + row + ', место ' + seat.textContent + '</span><span>' + price + ' ₽</span></div>');
+    });
+    list.innerHTML = html.length ? html.join('') : 'Пока ничего не выбрано';
+    document.getElementById('cart-total').textContent = total + ' ₽';
+    document.getElementById('btn-book').disabled = (picked.length === 0);
+}
+
+// показать первый тип при загрузке
+(function(){ var first = document.querySelector('.type-item'); if (first) pickTypeFromEl(first); })();
+function pickTypeFromEl(el) {
+    var m = el.getAttribute('onclick').match(/\d+/);
+    if (m) pickType(parseInt(m[0]));
+}
+</script>
+{% endblock %}
