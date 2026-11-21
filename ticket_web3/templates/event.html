@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+<div class="card event-head">
+  <div class="icon">{{ event.icon }}</div>
+  <div>
+    <h1 style="margin:0">{{ event.title }}</h1>
+    <div class="muted">{{ event.category }} · {{ event.venue_name }}, {{ event.city }}</div>
+    <div>{{ event.event_date.strftime('%d.%m.%Y %H:%M') }}</div>
+    <p>{{ event.description }}</p>
+  </div>
+</div>
+
+{% if user %}
+<form method="post" action="{{ url_for('book', eid=event.id) }}">
+  {% for t in types %}
+  <div class="card">
+    <h3 style="margin-top:0">{{ t.name }} — <span class="price">{{ t.price }} ₽</span></h3>
+    <div class="seats">
+      {% for s in seats[t.id] %}
+        {% if s.status == 'free' %}
+          <label class="seat free"><input type="checkbox" name="seats" value="{{ s.id }}" style="width:auto"> Р{{ s.seat_row }}-М{{ s.seat_number }}</label>
+        {% elif s.status == 'reserved' %}
+          <span class="seat reserved" title="Забронировано">Р{{ s.seat_row }}-М{{ s.seat_number }}</span>
+        {% else %}
+          <span class="seat sold" title="Продано">Р{{ s.seat_row }}-М{{ s.seat_number }}</span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <p><button class="btn" type="submit">Забронировать выбранные места (макс. 6)</button></p>
+</form>
+{% else %}
+<p><a class="btn" href="{{ url_for('auth') }}">Войдите, чтобы купить билет</a></p>
+{% endif %}
+{% endblock %}

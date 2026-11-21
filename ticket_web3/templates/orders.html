@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Мои заказы{% endblock %}
+{% block content %}
+<h1>Мои заказы</h1>
+{% for o in orders %}
+<div class="card">
+  <h3 style="margin-top:0">Заказ №{{ o.id }}
+    <span class="badge {{ o.status }}">
+      {% if o.status == 'paid' %}оплачен{% elif o.status == 'pending' %}ожидает оплаты{% else %}отменён{% endif %}
+    </span>
+  </h3>
+  <div class="muted">от {{ o.created_at.strftime('%d.%m.%Y %H:%M') }} · сумма: <span class="price">{{ o.total_price }} ₽</span></div>
+  <table>
+    <tr><th>Мероприятие</th><th>Тип билета</th><th>Место</th><th>Цена</th><th>QR</th></tr>
+    {% for p in o.positions %}
+    <tr>
+      <td>{{ p.event_title }}</td>
+      <td>{{ p.type_name }}</td>
+      <td>Р{{ p.seat_row }}-М{{ p.seat_number }}</td>
+      <td>{{ p.price }} ₽</td>
+      <td class="muted">{{ p.qr_code[:12] if p.qr_code else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if o.status == 'pending' %}
+  <p class="inline">
+    <form method="post" action="{{ url_for('pay', oid=o.id) }}" style="display:inline">
+      <button class="btn" type="submit">Оплатить</button>
+    </form>
+    <form method="post" action="{{ url_for('cancel', oid=o.id) }}" style="display:inline"
+          onsubmit="return confirm('Отменить заказ?')">
+      <button class="btn gray" type="submit">Отменить</button>
+    </form>
+  </p>
+  {% endif %}
+</div>
+{% else %}
+<p>У вас пока нет заказов. <a href="{{ url_for('index') }}">Выберите мероприятие в афише</a>.</p>
+{% endfor %}
+{% endblock %}

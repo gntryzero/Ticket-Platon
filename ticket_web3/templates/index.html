@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Афиша{% endblock %}
+{% block content %}
+<h1>Афиша мероприятий</h1>
+
+<div class="card">
+  <form method="get" action="{{ url_for('index') }}" class="inline">
+    <input type="text" name="q" value="{{ q }}" placeholder="Название или описание">
+    <select name="category">
+      <option value="">Все категории</option>
+      {% for c in cats %}
+        <option value="{{ c.name }}" {% if c.name == sel_category %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="venue">
+      <option value="">Все площадки</option>
+      {% for v in venues %}
+        <option value="{{ v.id }}" {% if v.id|string == sel_venue|string %}selected{% endif %}>{{ v.name }}</option>
+      {% endfor %}
+    </select>
+    <label style="display:inline">с <input type="date" name="date_from" value="{{ date_from }}"></label>
+    <label style="display:inline">по <input type="date" name="date_to" value="{{ date_to }}"></label>
+    <button class="btn" type="submit">Найти</button>
+    <a class="btn gray small" href="{{ url_for('index') }}">Сбросить</a>
+  </form>
+</div>
+
+{% if events %}
+<div class="grid">
+  {% for e in events %}
+  <div class="card event-head">
+    <div class="icon">{{ e.icon }}</div>
+    <div>
+      <h3 style="margin:0 0 6px"><a href="{{ url_for('event', eid=e.id) }}">{{ e.title }}</a></h3>
+      <div class="muted">{{ e.category }} · {{ e.venue_name }}, {{ e.city }}</div>
+      <div>{{ e.event_date.strftime('%d.%m.%Y %H:%M') }}</div>
+      <p style="margin:6px 0">{{ e.description[:120] }}{% if e.description|length > 120 %}…{% endif %}</p>
+      <div class="price">от {{ '%.0f'|format(e.min_price) if e.min_price else '—' }} ₽</div>
+      <a class="btn small" href="{{ url_for('event', eid=e.id) }}">Купить билет</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p>Ничего не найдено. Попробуйте изменить параметры поиска.</p>
+{% endif %}
+{% endblock %}

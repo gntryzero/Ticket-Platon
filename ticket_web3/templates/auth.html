@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Вход / Регистрация{% endblock %}
+{% block content %}
+<div class="card" style="max-width:460px;margin:30px auto">
+  <h2>{% if mode == 'register' %}Регистрация{% else %}Вход{% endif %}</h2>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('auth') }}">
+    <input type="hidden" name="mode" value="{{ mode }}">
+    <label>E-mail
+      <input type="email" name="email" required value="{{ request.form.get('email','') }}">
+    </label>
+    {% if mode == 'register' %}
+    <label>Имя (необязательно)
+      <input type="text" name="full_name" value="{{ request.form.get('full_name','') }}">
+    </label>
+    {% endif %}
+    <label>Пароль
+      <input type="password" name="password" required>
+    </label>
+    <p><button class="btn" type="submit">{% if mode == 'register' %}Зарегистрироваться{% else %}Войти{% endif %}</button></p>
+  </form>
+  {% if mode == 'register' %}
+    <p>Уже есть аккаунт? <a href="{{ url_for('auth') }}">Войти</a></p>
+  {% else %}
+    <p>Нет аккаунта? <a href="{{ url_for('auth', mode='register') }}">Зарегистрироваться</a></p>
+  {% endif %}
+</div>
+{% endblock %}

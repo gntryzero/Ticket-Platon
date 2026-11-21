@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Админ-панель{% endblock %}
+{% block content %}
+<h1>Админ-панель</h1>
+
+<!-- ===== Сводка ===== -->
+<div class="stat-cards">
+  <div class="stat-card"><div class="val">{{ '%.2f'|format(stats.revenue) }} ₽</div><div class="lbl">Выручка (оплачено)</div></div>
+  <div class="stat-card"><div class="val">{{ '%.2f'|format(stats.pending_sum) }} ₽</div><div class="lbl">Ожидает оплаты</div></div>
+  <div class="stat-card"><div class="val">{{ stats.paid_orders }}</div><div class="lbl">Оплаченных заказов</div></div>
+  <div class="stat-card"><div class="val">{{ stats.pending_orders }}</div><div class="lbl">Ожидающих заказов</div></div>
+  <div class="stat-card"><div class="val">{{ stats.cancelled }}</div><div class="lbl">Отменённых заказов</div></div>
+  <div class="stat-card"><div class="val">{{ stats.users_count }}</div><div class="lbl">Пользователей</div></div>
+  <div class="stat-card"><div class="val">{{ stats.active_events }}</div><div class="lbl">Активных мероприятий</div></div>
+  <div class="stat-card"><div class="val">{{ stats.hidden_events }}</div><div class="lbl">Скрытых мероприятий</div></div>
+  <div class="stat-card"><div class="val">{{ stats.sold_tickets }}</div><div class="lbl">Проданных билетов</div></div>
+  <div class="stat-card"><div class="val">{{ stats.reserved_tickets }}</div><div class="lbl">Забронированных билетов</div></div>
+  <div class="stat-card"><div class="val">{{ stats.venues_count }}</div><div class="lbl">Площадок</div></div>
+</div>
+<form method="post" action="{{ url_for('admin') }}">
+  <input type="hidden" name="action" value="recalc">
+  <button class="btn gray" type="submit">⟳ Пересчитать суммы заказов</button>
+</form>
+
+<!-- ===== Последние операции ===== -->
+<div class="admin-block">
+  <h2>Последние операции</h2>
+  {% if last_ops %}
+  <table>
+    <tr><th>Заказ</th><th>Пользователь</th><th>Мероприятия</th><th>Сумма</th><th>Статус</th><th>Дата</th></tr>
+    {% for o in last_ops %}
+    <tr>
+      <td>№{{ o.id }}</td>
+      <td>{{ o.full_name or o.email }}</td>
+      <td>{{ o.events_list or '—' }}</td>
+      <td>{{ o.total_price }} ₽</td>
+      <td><span class="badge {{ o.status }}">
+        {% if o.status == 'paid' %}оплачен{% elif o.status == 'pending' %}ожидает{% else %}отменён{% endif %}
+      </span></td>
+      <td class="muted">{{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">Заказов ещё нет.</p>
+  {% endif %}
+  <p><a href="{{ url_for('users_page') }}">Полная история по всем пользователям →</a></p>
+</div>
+
+<!-- ===== Добавление площадки ===== -->
+<div class="admin-block">
+  <h2>Добавить площадку</h2>
+  <form method="post" action="{{ url_for('admin') }}" class="inline">
+    <input type="hidden" name="action" value="add_venue">
+    <input type="text" name="name" placeholder="Название" required>
+    <input type="text" name="address" placeholder="Адрес">
+    <input type="text" name="city" placeholder="Город">
+    <input type="number" name="capacity" placeholder="Вместимость" min="1" value="100">
+    <button class="btn" type="submit">Добавить</button>
+  </form>
+  {% if venues %}
+  <details style="margin-top:10px"><summary>Список площадок ({{ venues|length }})</summary>
+    <table>
+      <tr><th>Название</th><th>Адрес</th><th>Город</th><th>Вместимость</th><th></th></tr>
+      {% for v in venues %}
+      <tr>
+        <td>{{ v.name }}</td><td>{{ v.address }}</td><td>{{ v.city }}</td><td>{{ v.capacity }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin') }}" onsubmit="return confirm('Удалить площадку?')">
+            <input type="hidden" name="action" value="delete_venue">
+            <input type="hidden" name="vid" value="{{ v.id }}">
+            <button class="btn small gray" type="submit">Удалить</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </details>
+  {% endif %}
+</div>
+
+<!-- ===== Добавление мероприятия ===== -->
+<div class="admin-block">
+  <h2>Добавить мероприятие</h2>
+  <form method="post" action="{{ url_for('admin') }}">
+    <input type="hidden" name="action" value="add_event">
+    <label>Название * <input type="text" name="title" required></label>
+    <label>Описание <textarea name="description" rows="2"></textarea></label>
+    <label>Дата и время * <input type="datetime-local" name="event_date" required></label>
+    <label>Площадка *
+      <select name="venue_id" required>
+        <option value="">— выберите —</option>
+        {% for v in venues %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Категория
+      <select name="category">
+        <option value="">— не задана —</option>
+        {% for c in cats %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <p><button class="btn" type="submit">Добавить мероприятие</button></p>
+  </form>
+</div>
+
+<!-- ===== Добавление типа билета ===== -->
+<div class="admin-block">
+  <h2>Добавить тип билета</h2>
+  <form method="post" action="{{ url_for('admin') }}" class="inline">
+    <input type="hidden" name="action" value="add_type">
+    <select name="event_id" required>
+      <option value="">— мероприятие —</option>
+      {% for e in events %}<option value="{{ e.id }}">{{ e.title }}</option>{% endfor %}
+    </select>
+    <input type="text" name="tname" placeholder="Название типа" required>
+    <input type="number" name="price" step="0.01" min="0" placeholder="Цена, ₽" required>
+    <input type="number" name="rows" min="1" placeholder="Рядов" value="5">
+    <input type="number" name="cols" min="1" placeholder="Мест в ряду" value="10">
+    <button class="btn" type="submit">Добавить</button>
+  </form>
+</div>
+
+<!-- ===== Список мероприятий с редактированием ===== -->
+<div class="admin-block">
+  <h2>Мероприятия</h2>
+  <form method="get" action="{{ url_for('admin') }}" class="inline">
+    <input type="text" name="q" value="{{ q }}" placeholder="Поиск мероприятий...">
+    <button class="btn" type="submit">Найти</button>
+    <a class="btn gray small" href="{{ url_for('admin') }}">Сбросить</a>
+  </form>
+
+  {% for e in events %}
+  <div class="card" style="margin-top:14px">
+    <h3 style="margin-top:0">{{ e.title }}
+      {% if e.status != 'active' %}<span class="badge cancelled">скрыто</span>{% endif %}
+    </h3>
+    <div class="muted">{{ e.venue_name }} · {{ e.event_date.strftime('%d.%m.%Y %H:%M') }} · {{ e.category or 'без категории' }}</div>
+
+    <details open>
+      <summary>Редактировать мероприятие</summary>
+      <form method="post" action="{{ url_for('admin') }}">
+        <input type="hidden" name="action" value="edit_event">
+        <input type="hidden" name="eid" value="{{ e.id }}">
+        <label>Название <input type="text" name="title" value="{{ e.title }}" required></label>
+        <label>Описание <textarea name="description" rows="2">{{ e.description or '' }}</textarea></label>
+        <label>Дата и время <input type="datetime-local" name="event_date"
+              value="{{ e.event_date.strftime('%Y-%m-%dT%H:%M') }}" required></label>
+        <label>Площадка
+          <select name="venue_id" required>
+            {% for v in venues %}
+              <option value="{{ v.id }}" {% if v.id == e.venue_id %}selected{% endif %}>{{ v.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Статус
+          <select name="status">
+            <option value="active" {% if e.status == 'active' %}selected{% endif %}>Активно</option>
+            <option value="inactive" {% if e.status != 'active' %}selected{% endif %}>Скрыто</option>
+          </select>
+        </label>
+        <label>Категория
+          <select name="category">
+            <option value="">— не задана —</option>
+            {% for c in cats %}
+              <option value="{{ c.name }}" {% if c.name == e.category %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <p><button class="btn" type="submit">Сохранить</button></p>
+      </form>
+    </details>
+
+    <details>
+      <summary>Цены и типы билетов</summary>
+      {% set ev_types = all_types | selectattr('event_id', 'equalto', e.id) | list %}
+      {% if ev_types %}
+      <table>
+        <tr><th>Тип</th><th>Цена</th><th>Всего мест</th><th>Действия</th></tr>
+        {% for t in ev_types %}
+        <tr>
+          <td>
+            <form method="post" action="{{ url_for('admin') }}">
+              <input type="hidden" name="action" value="edit_type">
+              <input type="hidden" name="type_id" value="{{ t.id }}">
+              <input type="text" name="tname" value="{{ t.name }}" style="width:160px">
+          </td>
+          <td>
+              <input type="number" name="price" step="0.01" min="0" value="{{ t.price }}" style="width:100px">
+          </td>
+          <td>{{ t.total_seats }}</td>
+          <td>
+              <button class="btn small" type="submit">Сохранить</button>
+            </form>
+            <form method="post" action="{{ url_for('admin') }}" style="display:inline"
+                  onsubmit="return confirm('Удалить тип билета и его свободные места?')">
+              <input type="hidden" name="action" value="delete_type">
+              <input type="hidden" name="type_id" value="{{ t.id }}">
+              <button class="btn small gray" type="submit">Удалить</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+      <p class="muted">Типов билетов нет — добавьте их в форме выше.</p>
+      {% endif %}
+    </details>
+
+    <p>
+      <a class="btn small gray" href="{{ url_for('event', eid=e.id) }}">Открыть страницу</a>
+      <form method="post" action="{{ url_for('admin') }}" style="display:inline"
+            onsubmit="return confirm('Удалить мероприятие и все его билеты?')">
+        <input type="hidden" name="action" value="delete_event">
+        <input type="hidden" name="eid" value="{{ e.id }}">
+        <button class="btn small gray" type="submit">Удалить</button>
+      </form>
+    </p>
+  </div>
+  {% else %}
+  <p>Мероприятий не найдено.</p>
+  {% endfor %}
+</div>
+{% endblock %}

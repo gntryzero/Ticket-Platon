@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<h1>Пользователи и их заказы</h1>
+<p><a class="btn gray small" href="{{ url_for('admin') }}">← Вернуться в админ-панель</a></p>
+
+{% for usr in users %}
+<div class="admin-block">
+  <h3 style="margin-top:0">{{ usr.full_name or 'Без имени' }}
+    <span class="muted">{{ usr.email }}</span>
+    {% if usr.role == 'admin' %}<span class="badge paid">админ</span>{% endif %}
+  </h3>
+  <div class="muted">
+    Заказов всего: {{ usr.orders_count }} · оплачено на сумму: <b>{{ usr.paid_sum }} ₽</b>
+  </div>
+  {% if usr.orders %}
+  <table style="margin-top:10px">
+    <tr><th>Заказ</th><th>Мероприятие</th><th>Тип</th><th>Место</th><th>Цена</th><th>Статус</th><th>Дата</th></tr>
+    {% for o in usr.orders %}
+      {% set n = o.positions|length %}
+      {% for p in o.positions %}
+      <tr>
+        {% if loop.first %}
+        <td rowspan="{{ n }}">№{{ o.id }}</td>
+        {% endif %}
+        <td>{{ p.event_title }}</td>
+        <td>{{ p.type_name }}</td>
+        <td>Р{{ p.seat_row }}-М{{ p.seat_number }}</td>
+        <td>{{ p.price }} ₽</td>
+        <td rowspan="{{ n }}">
+          <span class="badge {{ o.status }}">
+            {% if o.status == 'paid' %}оплачен{% elif o.status == 'pending' %}ожидает{% else %}отменён{% endif %}
+          </span>
+        </td>
+        <td rowspan="{{ n }}" class="muted">{{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="7" class="muted">Заказов нет</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">Заказов нет.</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
